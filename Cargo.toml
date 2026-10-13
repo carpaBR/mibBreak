@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = ["crates/mibbreak-core", "crates/mibbreak-cli", "apps/mibbreak/src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+rand = "0.8"
+sha1 = "0.10"
+md-5 = "0.10"
+base64 = "0.22"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+thiserror = "1"
+log = "0.4"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+env_logger = "0.11"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

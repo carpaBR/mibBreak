@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Main and PiP windows",
+  "windows": ["main", "pip-*"],
+  "permissions": ["core:default", "core:window:allow-set-always-on-top", "core:window:allow-set-fullscreen", "core:window:allow-close"]
+}

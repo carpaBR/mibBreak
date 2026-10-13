@@ -1,0 +1,26 @@
+[package]
+name = "mibbreak-app"
+description = "Viewer for Dahua-based cameras over LAN and the Easy4ip cloud"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "mibbreak_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+mibbreak-core = { path = "../../../crates/mibbreak-core" }
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio.workspace = true
+log.workspace = true
+env_logger.workspace = true
+rand.workspace = true
+tauri-plugin-dialog = "2"
+rqrr = "0.8"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }

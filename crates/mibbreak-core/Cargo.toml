@@ -1,0 +1,16 @@
+[package]
+name = "mibbreak-core"
+description = "Dahua / Easy4ip P2P tunnel and RTSP client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+tokio.workspace = true
+rand.workspace = true
+sha1.workspace = true
+md-5.workspace = true
+base64.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+log.workspace = true

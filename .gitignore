@@ -1,0 +1,14 @@
+/target
+node_modules/
+apps/*/src-tauri/gen/schemas/
+*.log
+
+# Never commit camera credentials, QR codes or captures
+cameras.json
+settings.json
+layouts.json
+*.camera_pass
+qr/
+snapshots/
+*.h264
+*.h265

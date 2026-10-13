@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>mibBreak</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+  <header id="bar">
+    <span class="brand">mibbreak</span>
+    <nav id="layouts"></nav>
+    <span class="spacer"></span>
+    <button id="btn-edit" data-key="e"></button>
+    <button id="btn-hd" data-key="h"></button>
+    <button id="btn-cams" data-key="c"></button>
+    <button id="btn-help" data-key="?">?</button>
+  </header>
+
+  <div id="edit-bar" hidden>
+    <span data-t="presets"></span>
+    <button data-preset="1">1</button>
+    <button data-preset="2x2">2×2</button>
+    <button data-preset="3x3">3×3</button>
+    <button data-preset="1+5">1+5</button>
+    <button data-preset="4x4">4×4</button>
+    <span class="sep">│</span>
+    <button id="btn-layout-new" data-t="newLayout"></button>
+    <button id="btn-layout-rename" data-t="rename"></button>
+    <button id="btn-layout-delete" data-t="delete"></button>
+    <span class="spacer"></span>
+    <span class="hint" data-t="editHint"></span>
+  </div>
+
+  <main id="stage"></main>
+
+  <aside id="drawer" hidden>
+    <div class="drawer-head">
+      <span data-t="cameras"></span>
+      <button id="btn-add" data-key="a" data-t="addCamera"></button>
+    </div>
+    <div class="drawer-head">
+      <button id="btn-export" data-t="export"></button>
+      <button id="btn-import" data-t="import"></button>
+    </div>
+    <ul id="cam-list"></ul>
+  </aside>
+
+  <footer id="status"></footer>
+
+  <div id="mobile"></div>
+
+  <dialog id="dlg-cam">
+    <form method="dialog" id="cam-form">
+      <h2 id="cam-form-title"></h2>
+      <div class="qr-zone" id="qr-zone">
+        <span data-t="qrDrop"></span>
+        <input type="file" id="qr-file" accept="image/*">
+        <input type="text" id="qr-text" data-tp="qrPaste" autocomplete="off">
+      </div>
+      <label><span data-t="name"></span><input name="name" autocomplete="off"></label>
+      <label><span data-t="serial"></span><input name="serial" required autocomplete="off" spellcheck="false"></label>
+      <div class="row">
+        <label><span data-t="user"></span><input name="user" value="admin" autocomplete="off"></label>
+        <label><span data-t="password"></span><input name="password" type="password" autocomplete="new-password"></label>
+      </div>
+      <p class="hint" id="sc-hint" hidden data-t="scHint"></p>
+      <div class="row">
+        <label><span data-t="mode"></span>
+          <select name="mode">
+            <option value="auto" data-t="modeAuto"></option>
+            <option value="lan" data-t="modeLan"></option>
+            <option value="cloud" data-t="modeCloud"></option>
+          </select>
+        </label>
+        <label><span data-t="host"></span><input name="host" data-tp="hostPh" autocomplete="off"></label>
+      </div>
+      <input type="hidden" name="model">
+      <p id="test-result" class="hint"></p>
+      <menu>
+        <button type="button" id="btn-test" data-t="test"></button>
+        <span class="spacer"></span>
+        <button value="cancel" formnovalidate data-t="cancel"></button>
+        <button value="save" id="btn-save" class="primary" data-t="save"></button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-io">
+    <form method="dialog" id="io-form">
+      <h2 id="io-title"></h2>
+      <div id="io-export">
+        <label class="check"><input type="checkbox" id="io-with-pass" checked><span data-t="withPasswords"></span></label>
+        <label><span data-t="filePassword"></span><input type="password" id="io-pass-out" autocomplete="new-password"></label>
+        <p class="hint" data-t="filePasswordHint"></p>
+      </div>
+      <div id="io-import">
+        <input type="file" id="io-file" accept=".json,application/json,text/plain">
+        <label id="io-pass-in-wrap" hidden><span data-t="filePassword"></span><input type="password" id="io-pass-in" autocomplete="off"></label>
+      </div>
+      <textarea id="io-text" spellcheck="false"></textarea>
+      <p id="io-result" class="hint"></p>
+      <menu>
+        <button type="button" id="io-go" class="primary"></button>
+        <button type="button" id="io-copy" data-t="copy"></button>
+        <button type="button" id="io-save" data-t="saveFile"></button>
+        <span class="spacer"></span>
+        <button value="cancel" data-t="close"></button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-help">
+    <form method="dialog">
+      <h2>mibbreak</h2>
+      <pre id="help-text"></pre>
+      <menu><span class="spacer"></span><button class="primary">ok</button></menu>
+    </form>
+  </dialog>
+
+  <script src="i18n.js"></script>
+  <script src="player.js"></script>
+  <script src="app.js"></script>
+  <script src="tiles.js"></script>
+  <script src="cameras.js"></script>
+  <script src="transfer.js"></script>
+  <script src="mobile.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

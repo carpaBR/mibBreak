@@ -1,0 +1,18 @@
+[package]
+name = "mibbreak-cli"
+description = "Command-line tools for mibbreak: tunnel, snapshot, soak test"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "mibbreak"
+path = "src/main.rs"
+
+[dependencies]
+mibbreak-core = { path = "../mibbreak-core" }
+tokio.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+env_logger.workspace = true
+log.workspace = true

@@ -1,0 +1,206 @@
+/* ── phone layout: vertical list of cameras ─────────────────────── */
+body.mobile {
+  display: block;
+  overflow: hidden;
+  font-size: 15px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+body.mobile #bar, body.mobile #edit-bar, body.mobile #stage, body.mobile #status, body.mobile #drawer { display: none !important; }
+#mobile { display: none; }
+body.mobile #mobile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.m-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--line);
+}
+.m-bar .brand { font-size: 17px; }
+.m-bar .count { color: var(--dim); font-size: 13px; }
+.m-btn {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 12px;
+  font-size: 15px;
+  border-radius: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--line);
+}
+.m-btn.on { color: var(--accent); border-color: var(--accent); }
+.m-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+.m-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 10px 24px;
+  /* a column that scrolls: cards keep their size (a grid squeezed them to fit) */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.m-list > * { flex-shrink: 0; }
+/* sound toggle over the video (only while playing) */
+.m-sound {
+  position: absolute;
+  left: 8px; bottom: 8px;
+  display: none;
+  background: rgba(16, 17, 20, 0.7);
+}
+.m-card.playing .m-sound { display: inline-grid; }
+
+/* horizontal mode: swipe between cameras, the one in view plays */
+body.m-horizontal .m-bar { padding: 4px 10px; }
+body.m-horizontal .m-list {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  gap: 10px;
+  padding: 8px;
+  align-items: stretch;
+}
+body.m-horizontal .m-card {
+  flex: 0 0 92%;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+}
+body.m-horizontal .m-video { flex: 1; aspect-ratio: auto; min-height: 0; }
+body.m-horizontal .m-row { padding: 2px 6px; }
+.m-empty { color: var(--dim); text-align: center; padding: 40px 16px; white-space: pre-line; }
+
+.m-card {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.m-card.playing { border-color: var(--dim); }
+.m-card.hd { border-color: var(--accent); }
+.m-video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+.m-video canvas { width: 100%; height: 100%; object-fit: contain; display: block; }
+.m-cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(16, 17, 20, 0.55);
+}
+.m-card.playing .m-cover { display: none; }
+.m-play {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 2px solid var(--fg);
+  background: rgba(0, 0, 0, 0.45);
+  display: grid; place-items: center;
+}
+.m-play svg { width: 34px; height: 34px; fill: var(--fg); margin-left: 4px; }
+.m-msg {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 6px 10px;
+  font-size: 13px;
+  background: rgba(16, 17, 20, 0.85);
+  color: var(--warn);
+}
+.m-msg.err { color: var(--err); }
+.m-exit {
+  display: none;
+  position: absolute;
+  top: 12px; right: 12px;
+}
+.m-video:fullscreen .m-exit, .m-video.fake-full .m-exit { display: inline-grid; }
+.m-video:fullscreen, .m-video.fake-full { aspect-ratio: auto; }
+.m-video.fake-full { position: fixed; inset: 0; z-index: 50; }
+
+.m-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+}
+.m-row { flex-wrap: wrap; }
+/* name + status on their own line above the buttons */
+.m-name { order: -1; flex: 1 0 100%; min-width: 0; padding: 2px 4px 0; }
+.m-row .m-btn { flex: 1; }
+body.m-horizontal .m-name { order: 0; flex: 1 1 auto; }
+body.m-horizontal .m-row { flex-wrap: nowrap; }
+body.m-horizontal .m-row .m-btn { flex: 0 0 auto; }
+.m-name b { display: block; font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-name small { color: var(--dim); font-size: 12px; }
+
+/* bottom sheet menu */
+.m-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+}
+.m-sheet[hidden] { display: none; }
+.m-sheet ul {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0 16px;
+  width: 100%;
+  background: var(--bg2);
+  border-top: 1px solid var(--accent);
+  border-radius: 14px 14px 0 0;
+}
+.m-sheet li button {
+  width: 100%;
+  min-height: 52px;
+  text-align: left;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: 16px;
+}
+.m-sheet li button.danger { color: var(--err); }
+
+/* Android picture-in-picture: only the chosen video */
+body.in-pip #mobile > :not(.m-list), body.in-pip .m-card:not(.pip-card), body.in-pip .m-row, body.in-pip .m-sheet { display: none !important; }
+body.in-pip .m-list { padding: 0; overflow: hidden; }
+body.in-pip .pip-card { border: 0; border-radius: 0; }
+body.in-pip .pip-card .m-video { position: fixed; inset: 0; aspect-ratio: auto; }
+
+/* dialogs as full-width sheets on phones */
+body.mobile dialog {
+  width: 100vw;
+  max-width: 100vw;
+  max-height: 100vh;
+  margin: 0;
+  border-radius: 0;
+  border: 0;
+  inset: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+}
+body.mobile dialog input, body.mobile dialog select, body.mobile dialog textarea { font-size: 16px; min-height: 44px; }
+body.mobile dialog button { min-height: 44px; padding: 0 16px; font-size: 15px; }
+body.mobile dialog .row { flex-direction: column; gap: 0; }
+body.mobile dialog menu { flex-wrap: wrap; }
+
+/* touch screens in mosaic mode (tablet / TV): larger targets */
+@media (pointer: coarse) {
+  body:not(.mobile) button { min-height: 36px; padding: 4px 12px; }
+  body:not(.mobile) .tile .tools button { min-height: 32px; padding: 0 10px; }
+}
