@@ -58,7 +58,6 @@ pub struct TunnelStats {
 const BIND_TIMEOUT: Duration = Duration::from_secs(8);
 const BUSY_RETRY_WAIT: Duration = Duration::from_secs(4);
 const DISC_TIMEOUT: Duration = Duration::from_secs(2);
-const TICK: Duration = Duration::from_millis(10);
 const REALM_BUFFER: usize = 1 << 20;
 
 enum Cmd {
@@ -275,9 +274,6 @@ impl Driver {
         self.udp = Some(self.sock.socket());
         self.session.send(bodies::sync(), Instant::now());
         self.flush().await;
-        let mut tick = tokio::time::interval(TICK);
-        tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
-
         let reason: String = loop {
             tokio::select! {
                 msg = other.recv() => {
@@ -309,11 +305,13 @@ impl Driver {
                         }
                     }
                 }
-                _ = tick.tick() => {
+                // Sleeps until the session has work (ACK, retransmit, heartbeat)
+                // instead of waking on a fixed tick while the tunnel idles
+                _ = tokio::time::sleep_until(self.session.next_deadline().into()) => {
                     if let Some(r) = self.session.poll(Instant::now()) { break r.to_string(); }
-                    *self.stats.lock().unwrap() = self.session.stats;
                 }
             }
+            *self.stats.lock().unwrap() = self.session.stats;
             self.flush().await;
         };
 

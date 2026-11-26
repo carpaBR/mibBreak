@@ -19,7 +19,7 @@ use crate::store::{Camera, Mode, Store};
 
 pub type FrameSink = Channel<InvokeResponseBody>;
 
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq)]
 pub struct Status {
     pub id: String,
     /// idle | connecting | live | retrying
@@ -117,6 +117,7 @@ impl Hub {
             backoff: Duration::from_secs(2),
             release_at: None,
             status: Status { id: cam_id.to_string(), state: "idle".into(), ..Default::default() },
+            published: None,
             frames: 0,
             frames_logged_at: Instant::now(),
             audio_track: None,
@@ -187,6 +188,8 @@ struct Actor {
     backoff: Duration,
     release_at: Option<Instant>,
     status: Status,
+    /// Last status sent to the UI: unchanged ones are not sent again.
+    published: Option<Status>,
     frames: u64,
     frames_logged_at: Instant,
     audio_track: Option<AudioTrack>,
@@ -233,7 +236,16 @@ impl Actor {
                         self.backoff = Duration::from_secs(2);
                     }
                 },
-                ev = recv_opt(&mut self.runner) => self.on_event(ev),
+                ev = recv_opt(&mut self.runner) => {
+                    // Media is the hot path (every frame): it changes nothing to
+                    // reconcile unless a viewer went away while fanning it out
+                    let media = matches!(ev, Some(Ev::Frame(_) | Ev::Audio(_)));
+                    let viewers = self.viewers.len();
+                    self.on_event(ev);
+                    if media && self.viewers.len() == viewers {
+                        continue;
+                    }
+                }
                 _ = sleep_until_opt(self.retry_at) => { self.retry_at = None; }
                 _ = sleep_until_opt(self.release_at) => {
                     self.release_at = None;
@@ -339,7 +351,7 @@ impl Actor {
     }
 
     fn fan_out(&mut self, f: &VideoFrame) {
-        let mut frame_msg: Option<Vec<u8>> = None;
+        let mut ready = Vec::new();
         let mut dead = Vec::new();
         for (id, v) in self.viewers.iter_mut() {
             if !v.configured {
@@ -359,16 +371,22 @@ impl Actor {
                 }
                 v.configured = true;
             }
-            let msg = frame_msg.get_or_insert_with(|| {
-                let mut m = Vec::with_capacity(6 + f.data.len());
-                m.push(2u8);
-                m.push(f.keyframe as u8);
-                m.extend_from_slice(&f.timestamp.to_be_bytes());
-                m.extend_from_slice(&f.data);
-                m
-            });
-            if v.sink.send(InvokeResponseBody::Raw(msg.clone())).is_err() {
-                dead.push(*id);
+            ready.push(*id);
+        }
+        // One copy of the frame per viewer, and none extra for the last one
+        if let Some((&last, rest)) = ready.split_last() {
+            let mut msg = Vec::with_capacity(6 + f.data.len());
+            msg.push(2u8);
+            msg.push(f.keyframe as u8);
+            msg.extend_from_slice(&f.timestamp.to_be_bytes());
+            msg.extend_from_slice(&f.data);
+            for id in rest {
+                if self.viewers[id].sink.send(InvokeResponseBody::Raw(msg.clone())).is_err() {
+                    dead.push(*id);
+                }
+            }
+            if self.viewers[&last].sink.send(InvokeResponseBody::Raw(msg)).is_err() {
+                dead.push(last);
             }
         }
         for id in dead {
@@ -423,9 +441,16 @@ impl Actor {
         }
     }
 
-    fn publish(&self) {
+    /// Sends the status to the UI when it changed. Runs after every event, video
+    /// frames included, so an unconditional emit would cost an IPC message and
+    /// a UI re-render per frame.
+    fn publish(&mut self) {
+        if self.published.as_ref() == Some(&self.status) {
+            return;
+        }
         self.statuses.lock().unwrap().insert(self.cam_id.clone(), self.status.clone());
         let _ = self.app.emit("camera-status", &self.status);
+        self.published = Some(self.status.clone());
     }
 }
 

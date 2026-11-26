@@ -171,6 +171,7 @@ async function init() {
   $('#btn-layout-delete').onclick = deleteLayout;
   document.querySelectorAll('[data-preset]').forEach(b => (b.onclick = () => applyPreset(b.dataset.preset)));
   document.addEventListener('keydown', onKey);
+  document.addEventListener('visibilitychange', onStageVisibility);
   wireCamDialog();
   wireTransfer();
 

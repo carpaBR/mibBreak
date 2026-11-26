@@ -16,7 +16,7 @@ const el = (tag, cls, text) => {
 const state = {
   cams: [],
   statuses: {},
-  settings: { always_hd: false, hover_hd: true, release_after_secs: 30, lang: 'pt' },
+  settings: { always_hd: false, hover_hd: false, release_after_secs: 30, lang: 'pt' },
   layouts: { current: ALL, items: {} },
   tiles: [], // { cam, x, y, w, h, el, player, hoverTimer }
   edit: false,

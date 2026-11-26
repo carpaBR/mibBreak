@@ -373,6 +373,26 @@ impl Session {
         }
     }
 
+    /// When `poll` next has something to do, so the caller can sleep until then
+    /// instead of polling on a fixed tick.
+    pub fn next_deadline(&self) -> Instant {
+        // The liveness checks use a strict `>`: wake just past them
+        let past = |t: Instant| t + Duration::from_millis(1);
+        let mut at = past(self.last_heard + self.cfg.idle_timeout);
+        if self.heartbeats {
+            at = at.min(self.last_heartbeat + self.cfg.heartbeat);
+        }
+        if let Some(t) = self.ack_due {
+            at = at.min(t);
+        }
+        // Only the oldest can be due first: later ones were sent after it
+        if let Some(o) = self.outstanding.front() {
+            at = at.min(o.last_sent + self.cfg.rto * 2u32.pow(o.tries.min(16)));
+            at = at.min(past(self.last_ack_progress + self.cfg.stall_timeout));
+        }
+        at
+    }
+
     /// Timers: delayed ACK, retransmissions, heartbeat, liveness. Returns a close
     /// reason when the session is dead.
     pub fn poll(&mut self, now: Instant) -> Option<&'static str> {
@@ -472,6 +492,28 @@ mod tests {
         s.out.clear();
         assert!(s.poll(t0 + Duration::from_secs(5)).is_none());
         assert!(s.out.is_empty());
+    }
+
+    #[test]
+    fn deadline_follows_the_timers() {
+        let t0 = Instant::now();
+        let cfg = Config::default();
+        let mut s = Session::new(cfg.clone(), t0);
+        // idle: next thing to do is the heartbeat
+        assert_eq!(s.next_deadline(), t0 + cfg.heartbeat);
+        s.heartbeats = false;
+        assert!(s.next_deadline() > t0 + cfg.idle_timeout);
+        // something unacknowledged: the retransmission timer comes first
+        s.send(bodies::status(1, "CONN"), t0);
+        assert_eq!(s.next_deadline(), t0 + cfg.rto);
+        // polling at the deadline does the work and moves it forward
+        s.poll(s.next_deadline());
+        assert_eq!(s.stats.retransmits_out, 1);
+        assert_eq!(s.next_deadline(), t0 + cfg.rto + cfg.rto * 2);
+        // data in: a delayed ACK is due soon
+        let mut s = Session::new(cfg.clone(), t0);
+        s.input(&pkt(0, bodies::status(1, "CONN")), t0);
+        assert_eq!(s.next_deadline(), t0 + cfg.ack_delay);
     }
 
     #[test]
