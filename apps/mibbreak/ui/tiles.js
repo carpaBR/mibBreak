@@ -53,6 +53,7 @@ function makeTile(spec) {
     e.stopPropagation();
     removeTile(tile);
   };
+  tile.soundBtn = bSound;
   tools.append(bSound, bHd);
   if (CAN_PIP) tools.append(bPip);
   tools.append(bFull);
@@ -85,14 +86,43 @@ function makeTile(spec) {
   root.addEventListener('dblclick', () => !state.edit && toggleFull(tile));
   root.addEventListener('pointerdown', e => startDrag(e, tile, e.target === handle));
 
-  tile.player = new Player(canvas, tile.cam, {
+  tile.canvas = canvas;
+  startTilePlayer(tile);
+  updateTileStatus(tile, cam);
+  refreshHd(tile);
+  return tile;
+}
+
+function startTilePlayer(tile) {
+  tile.player = new Player(tile.canvas, tile.cam, {
     hd: wantsHd(tile),
     onError: text => showTileMsg(tile, text, true),
   });
   tile.player.start().catch(err => showTileMsg(tile, String(err), true));
-  updateTileStatus(tile, cam);
-  refreshHd(tile);
-  return tile;
+}
+
+// A minimized / hidden window stops receiving and decoding video after a short
+// grace period, and picks up again when it comes back. The backend keeps the
+// cloud session for a while (release_after_secs), so resuming is quick.
+const HIDDEN_PAUSE_MS = 5000;
+let hiddenTimer = null;
+
+function onStageVisibility() {
+  clearTimeout(hiddenTimer);
+  if (state.mobile) return;
+  if (document.hidden) {
+    hiddenTimer = setTimeout(() => {
+      for (const tile of state.tiles) {
+        if (!tile.player) continue;
+        tile.player.stop();
+        tile.player = null;
+        tile.soundBtn.classList.remove('on');
+        tile.soundBtn.textContent = t('soundOff');
+      }
+    }, HIDDEN_PAUSE_MS);
+  } else {
+    for (const tile of state.tiles) if (!tile.player) startTilePlayer(tile);
+  }
 }
 
 function showTileMsg(tile, text, isErr) {

@@ -40,7 +40,9 @@ function g711Table(alaw) {
 class Player {
   constructor(canvas, camId, { hd = false, onError = () => {} } = {}) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d', { alpha: false });
+    // desynchronized: lets the browser skip compositor work for a canvas that
+    // repaints on every frame
+    this.ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
     this.camId = camId;
     this.hd = hd;
     this.onError = onError;
@@ -52,6 +54,9 @@ class Player {
     this.closed = false;
     this.muted = true;
     this.audio = null; // { ctx, decoder | table, nextTime, rate, channels }
+    this.pending = null; // newest decoded frame waiting for the next paint
+    this.rafId = 0;
+    this.paint = () => this.paintPending();
   }
 
   static supported() {
@@ -82,6 +87,14 @@ class Player {
     if (this.sub != null) invoke('unsubscribe', { sub: this.sub });
     this.sub = null;
     this.resetDecoder();
+    this.dropPending();
+  }
+
+  dropPending() {
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    this.rafId = 0;
+    if (this.pending) this.pending.close();
+    this.pending = null;
   }
 
   resetDecoder() {
@@ -99,8 +112,8 @@ class Player {
       uiLog(`${this.camId}: first message ${Object.prototype.toString.call(m)} VideoDecoder=${typeof window.VideoDecoder}`);
     }
     const u8 = m instanceof ArrayBuffer ? new Uint8Array(m) : ArrayBuffer.isView(m) ? new Uint8Array(m.buffer, m.byteOffset, m.byteLength) : new Uint8Array(m);
+    if (u8[0] === 2) return this.decode(u8); // the hot path first
     if (u8[0] === 1) return this.configure(JSON.parse(new TextDecoder().decode(u8.subarray(1))));
-    if (u8[0] === 2) return this.decode(u8);
     if (u8[0] === 3) return this.configureAudio(JSON.parse(new TextDecoder().decode(u8.subarray(1))));
     if (u8[0] === 4) return this.decodeAudio(u8.subarray(5));
   }
@@ -256,7 +269,27 @@ class Player {
     }
   }
 
+  /**
+   * Paints at most once per display refresh: a frame that arrives before the
+   * previous one was painted replaces it (and is freed at once, which also
+   * hands its buffer back to a hardware decoder).
+   */
   draw(frame) {
+    if (this.closed) return frame.close();
+    if (this.pending) this.pending.close();
+    this.pending = frame;
+    // requestAnimationFrame does not run in a hidden page, and Android's
+    // picture-in-picture may report one while still showing it: paint now
+    if (document.hidden) return this.paintPending();
+    if (!this.rafId) this.rafId = requestAnimationFrame(this.paint);
+  }
+
+  paintPending() {
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    this.rafId = 0;
+    const frame = this.pending;
+    this.pending = null;
+    if (!frame) return;
     if (this.closed) return frame.close();
     if (!this.drawn) {
       this.drawn = true;
