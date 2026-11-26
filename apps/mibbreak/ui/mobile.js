@@ -92,7 +92,9 @@ function openSheet(items) {
 
 // ── cards ──────────────────────────────────────────────────────────────────
 function cardHd(card) {
-  return state.settings.always_hd || card.hd || mobile.full === card || mobile.pipCard === card;
+  if (state.settings.always_hd || card.hd) return true;
+  if (Player.software) return false; // the main stream is too heavy without hardware decoding
+  return mobile.full === card || mobile.pipCard === card;
 }
 
 function syncCard(card) {

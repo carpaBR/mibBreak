@@ -19,6 +19,11 @@ function renderStatusLine() {
   const lan = live.filter(s => s.via === 'lan').length;
   const summary = `${state.cams.length} ${t('cameras')} · ${live.length} ${t('st_live')} (${lan} ${t('via_lan')}, ${live.length - lan} ${t('via_cloud')})`;
   line.append(el('span', live.length ? 'ok' : '', summary));
+  if (Player.software) {
+    const sw = el('span', 'err', t('softwareDecode'));
+    sw.title = t('softwareDecodeTip');
+    line.append(sw);
+  }
   for (const s of sts.filter(s => s.state === 'retrying')) {
     const cam = camById(s.id);
     line.append(el('span', 'err', `${cam ? cam.name : s.id}: ${errorText(s)}`));
@@ -172,6 +177,11 @@ async function init() {
   document.querySelectorAll('[data-preset]').forEach(b => (b.onclick = () => applyPreset(b.dataset.preset)));
   document.addEventListener('keydown', onKey);
   document.addEventListener('visibilitychange', onStageVisibility);
+  window.addEventListener('mib-software-decode', () => {
+    for (const tile of state.tiles) refreshHd(tile);
+    if (state.mobile) mobile.cards.forEach(syncCard);
+    renderStatusLine();
+  });
   wireCamDialog();
   wireTransfer();
 

@@ -57,6 +57,16 @@ class Player {
     this.paint = () => this.paintPending();
   }
 
+  /** Set once a decoder had to fall back to software (no usable GPU). */
+  static software = false;
+
+  static markSoftware() {
+    if (Player.software) return;
+    Player.software = true;
+    uiLog('no hardware video decoding: software mode');
+    window.dispatchEvent(new Event('mib-software-decode'));
+  }
+
   static supported() {
     return typeof window.VideoDecoder === 'function';
   }
@@ -225,6 +235,7 @@ class Player {
       if (ok === false) {
         delete config.hardwareAcceleration;
         ok = await check(config);
+        if (ok === true) Player.markSoftware();
       }
       if (ok !== true) {
         uiLog(`${this.camId}: ${cfg.codec} not decodable here (answer: ${ok})`);

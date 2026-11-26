@@ -148,7 +148,10 @@ function place(tile) {
 }
 
 function wantsHd(tile) {
-  return state.settings.always_hd || !!tile.hd || state.full === tile || (state.settings.hover_hd && tile.hoverHd);
+  if (state.settings.always_hd || tile.hd) return true;
+  // Without hardware decoding the main stream is too heavy to switch to on its own
+  if (Player.software) return false;
+  return state.full === tile || (state.settings.hover_hd && tile.hoverHd);
 }
 
 function refreshHd(tile) {
