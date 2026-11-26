@@ -2001,7 +2001,7 @@ dependencies = [
 
 [[package]]
 name = "mibbreak-app"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "env_logger",
  "image",
@@ -2019,7 +2019,7 @@ dependencies = [
 
 [[package]]
 name = "mibbreak-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -2031,7 +2031,7 @@ dependencies = [
 
 [[package]]
 name = "mibbreak-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "base64 0.22.1",
  "chrono",
