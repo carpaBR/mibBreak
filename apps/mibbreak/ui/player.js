@@ -40,9 +40,7 @@ function g711Table(alaw) {
 class Player {
   constructor(canvas, camId, { hd = false, onError = () => {} } = {}) {
     this.canvas = canvas;
-    // desynchronized: lets the browser skip compositor work for a canvas that
-    // repaints on every frame
-    this.ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+    this.ctx = canvas.getContext('2d', { alpha: false });
     this.camId = camId;
     this.hd = hd;
     this.onError = onError;
@@ -295,7 +293,13 @@ class Player {
       this.drawn = true;
       uiLog(`${this.camId}: first frame ${frame.displayWidth}x${frame.displayHeight}`);
     }
-    const w = frame.displayWidth, h = frame.displayHeight;
+    // Draw at the size the tile shows, not the camera's: a 4 MP frame in a
+    // small tile would otherwise be painted (and composited) at full size
+    const fw = frame.displayWidth, fh = frame.displayHeight;
+    const dpr = window.devicePixelRatio || 1;
+    const cw = this.canvas.clientWidth * dpr, ch = this.canvas.clientHeight * dpr;
+    const scale = cw && ch ? Math.min(1, cw / fw, ch / fh) : 1;
+    const w = Math.max(1, Math.round(fw * scale)), h = Math.max(1, Math.round(fh * scale));
     if (this.canvas.width !== w || this.canvas.height !== h) {
       this.canvas.width = w;
       this.canvas.height = h;

@@ -107,21 +107,32 @@ function startTilePlayer(tile) {
 const HIDDEN_PAUSE_MS = 5000;
 let hiddenTimer = null;
 
+function pauseTile(tile) {
+  if (!tile.player) return;
+  tile.player.stop();
+  tile.player = null;
+  tile.soundBtn.classList.remove('on');
+  tile.soundBtn.textContent = t('soundOff');
+}
+
+/** A tile hidden behind a full-screen one does not need its stream. */
+const tileShown = tile => !state.full || state.full === tile;
+
+/** Plays the tiles that can be seen and pauses the rest. */
+function syncTilePlayback() {
+  for (const tile of state.tiles) {
+    if (!tileShown(tile)) pauseTile(tile);
+    else if (!tile.player) startTilePlayer(tile);
+  }
+}
+
 function onStageVisibility() {
   clearTimeout(hiddenTimer);
   if (state.mobile) return;
   if (document.hidden) {
-    hiddenTimer = setTimeout(() => {
-      for (const tile of state.tiles) {
-        if (!tile.player) continue;
-        tile.player.stop();
-        tile.player = null;
-        tile.soundBtn.classList.remove('on');
-        tile.soundBtn.textContent = t('soundOff');
-      }
-    }, HIDDEN_PAUSE_MS);
+    hiddenTimer = setTimeout(() => state.tiles.forEach(pauseTile), HIDDEN_PAUSE_MS);
   } else {
-    for (const tile of state.tiles) if (!tile.player) startTilePlayer(tile);
+    syncTilePlayback();
   }
 }
 
@@ -184,6 +195,7 @@ function toggleFull(tile) {
   if (prev) prev.el.classList.remove('full');
   state.full = prev === tile ? null : tile;
   if (state.full) state.full.el.classList.add('full');
+  if (!document.hidden) syncTilePlayback();
   if (prev) refreshHd(prev);
   if (state.full) refreshHd(state.full);
 }
